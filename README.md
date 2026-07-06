@@ -28,6 +28,7 @@ Ferramenta para instalação automatizada de softwares, otimização e configura
 2. **Coloque o arquivo `config.xml` na mesma pasta do executável**
 3. Execute como **Administrador**
 4. Use a senha configurada para desbloquear
+5. Link do .exe : https://github.com/linnektoic-lgtm/Kit-Techinblue/releases/tag/v2.0
 
 ## 💻 Requisitos
 - Windows 10/11 x64
