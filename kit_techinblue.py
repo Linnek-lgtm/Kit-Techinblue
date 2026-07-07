@@ -290,7 +290,7 @@ class KitTechinblueGUI:
         self.entry_senha.bind('<Return>', lambda event: self.validar_senha())
 
     def validar_senha(self):
-        if self.entry_senha.get() == "S3nh@48517": # Defina sua senha aqui 👈🫡
+        if self.entry_senha.get() == "SuaSenhaAqui!": # Defina sua senha aqui 👈🫡
             self.frame_bloqueio.destroy()
             self.log("[SISTEMA] Acesso liberado pelo técnico da Techinblue.")
         else:
