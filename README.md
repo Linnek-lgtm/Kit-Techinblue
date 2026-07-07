@@ -20,15 +20,23 @@ Ferramenta para instalação automatizada de softwares, otimização e configura
 1. Clone o repositório
 2. Instale as dependências: `pip install -r requirements.txt`
 3. Configure a senha em `def validar_senha(self):` no arquivo `kit_techinblue.py`
-4. Coloque o arquivo `config.xml` na mesma pasta do `kit_techinblue.py`
-5. Execute: `python kit_techinblue.py`
+4. Execute: `python kit_techinblue.py`
 
 #### Opção 2: Executável
 1. Baixe o `KitTechinblue.exe`
-2. **Coloque o arquivo `config.xml` na mesma pasta do executável**
+2. Crie uma pasta e coloque o Executável `KitTechinblue.exe`
 3. Execute como **Administrador**
 4. Use a senha configurada para desbloquear
 5. Link do .exe : https://github.com/linnektoic-lgtm/Kit-Techinblue/releases/tag/v2.0
+
+## IMPORTANTE - ANTES DE USAR:
+1.  Clique com botão direito no Kit_Techinblue.exe > Executar como administrador
+2.  Windows > Configurações > Privacidade e segurança > Segurança do Windows 
+    > Controle de Aplicativos e Navegador > Configurações de Reputação 
+    > Desativar "Verificar aplicativos e arquivos"
+3.  Após usar o kit, ative a segurança novamente.
+
+Motivo: O Windows 10/11 22H2+ bloqueia instaladores baixados da internet.
 
 ## 💻 Requisitos
 - Windows 10/11 x64
