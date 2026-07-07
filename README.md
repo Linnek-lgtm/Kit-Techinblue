@@ -53,3 +53,11 @@ Cansado de ficar abrindo 10 programas diferentes pra fazer uma manutenção, res
 
 A ideia era simples: 1 clique pra HWInfo, 1 clique para aplicar configurações de rede, 1 clique pra otimizar.
 Isso cortou pela metade o tempo de atendimento aqui na empresa.
+
+
+## O KIT TECHINBLUE V2.0 é uma ferramenta de automação de instalação.
+1. Ele apenas baixa e instala os programas listados.
+2. NÃO contém ativadores, cracks, keygens ou patches.
+3. O usuário é 100% responsável por possuir licenças válidas dos softwares.
+
+Desenvolvido para uso técnico e corporativo.
