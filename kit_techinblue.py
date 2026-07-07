@@ -19,6 +19,8 @@ import sys             # Acesso a variáveis e funções do sistema
 import ctypes          # Acesso a DLLs do Windows - Usado pra rodar como Admin
 import subprocess      # Execução de comandos CMD/PowerShell
 import threading       # Rodar tarefas em segundo plano sem travar a GUI
+import ssl             # <-- ADICIONA ESSA LINHA AQUI. Ignorar SSL do TeamViewer
+import urllib.request  # Download e checagem de link
 from datetime import datetime # Data e Hora pro log e relatório
 
 # ===================================================
@@ -112,39 +114,93 @@ class KitTechinblueGUI:
 
         # ===================================================
         # BLOCO: BANCO DE DADOS DE PROGRAMAS
-        # DESC: Lista todos os programas do "Plano 1, 2 e 3". Link + Nome do Arq + Parâmetros Silent
-        #  - Adicionar novos programas aqui seguindo o padrão
+        # DESC: Aqui fica a lista de todos os programas do Kit
         # ===================================================
         self.banco_programas = {
-            # --- PLANO 1: ESSENCIAIS ---
-            "7ZIP": {"link": "https://www.7-zip.org/a/7z2408-x64.exe", "arq": "7zip.exe", "params": "/S"},
-            "JAVA": {"link": "https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.exe", "arq": "Java.exe",
-                     "params": "/s"},
-            "CHROME": {"link": "https://dl.google.com/chrome/install/latest/chrome_installer.exe", "arq": "Chrome.exe",
-                       "params": "/silent /install"},
-            "EDGE": {"link": "https://go.microsoft.com/fwlink/?linkid=2109147", "arq": "Edge.exe",
-                     "params": "/silent /install"},
 
+            # ===================================================
+            # --- PLANO 1: ESSENCIAIS ---
+            # Programas básicos que todo PC precisa
+            # ===================================================
+            "7ZIP": {
+                "link": "https://www.7-zip.org/a/7z2408-x64.exe",  # Link direto de download
+                "arq": "7zip.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/S"  # Parâmetros para instalação silenciosa
+            },
+            "JAVA": {
+                "link": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4+7/OpenJDK21U-jdk_x64_windows_hotspot_21.0.4_7.msi",
+                # Link direto de download
+                "arq": "Java.msi",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/passive /norestart"  # /passive = mostra barra de progresso. /norestart = não reinicia
+            },
+            "CHROME": {
+                "link": "https://dl.google.com/chrome/install/latest/chrome_installer.exe",  # Link direto de download
+                "arq": "Chrome.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/silent /install"  # /silent = 100% sem janela
+            },
+            "EDGE": {
+                "link": "https://go.microsoft.com/fwlink/?linkid=2109147",  # Link direto de download
+                "arq": "Edge.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/silent /install"  # Parâmetros para instalação silenciosa
+            },
+
+            # ===================================================
             # --- PLANO 2: COMUNICAÇÃO / PRODUTIVIDADE ---
-            "FIREFOX": {"link": "https://download.mozilla.org/?product=firefox-msi-latest-ssl&os=win64&lang=pt-BR",
-                        "arq": "Firefox.msi", "params": "/passive /norestart"},
+            # Office, Navegadores, PDF
+            # ===================================================
+            "FIREFOX": {
+                "link": "https://download.mozilla.org/?product=firefox-msi-latest-ssl&os=win64&lang=pt-BR",
+                # Link direto de download
+                "arq": "Firefox.msi",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/passive /norestart"  # Parâmetros para instalação silenciosa (MSI)
+            },
             "ADOBE": {
-                "link": "https://ftp.adobe.com/pub/adobe/reader/win/AcrobatDC/2400220300/AcroRdrDC2400220300_pt_BR.exe",
-                "arq": "Adobe.exe", "params": "/sAll /msi /norestart"},
+                # Link do instalador COMPLETO e Standalone (Aceita os parâmetros silenciosos perfeitamente)
+                "link": "https://ardownload2.adobe.com/pub/adobe/acrobat/win/AcrobatDC/2400220857/AcroRdrDCx642400220857_MUI.exe",
+                # Link direto de download
+                "arq": "Adobe.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/sAll /msi /norestart"
+                # /sAll = Instalação invisível | /msi = Parâmetros MSI | /norestart = Não reinicia
+            },
             "OFFICE 365/2021": {
                 "link": "https://c2rsetup.officeapps.live.com/c2r/download.aspx?ProductreleaseID=O365ProPlusRetail&platform=x64&language=pt-br",
-                "arq": "OfficeSetup.exe", "params": ""},
+                # Link direto de download
+                "arq": "OfficeSetup.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": ''  # DEIXAR VAZIO. O código já força o /configure com o XML
+            },
 
+            # ===================================================
             # --- PLANO 3: SUPORTE / ESPECÍFICOS ---
-            "TEAMVIEWER": {"link": "https://download.teamviewer.com/pub/tv/TeamViewer_Host.msi",
-                           "arq": "TeamViewer.msi", "params": "/passive /norestart"},
-            "ANYDESK": {"link": "https://download.anydesk.com/AnyDesk.exe", "arq": "AnyDesk.exe",
-                        "params": '--install "C:\\Program Files\\AnyDesk" --start-with-win --silent'},
-            "WINRAR": {"link": "https://www.win-rar.com/fileadmin/winrar-versions/winrar-x64-631br.exe",
-                       "arq": "WinRAR.exe", "params": "/S"},
-            "MILVUS AGENTE": {"link": "https://update.milvus.com.br/downloads/110.0.0.4/x64/Setup_Milvus.exe",
-                              "arq": "Setup_Milvus.exe", "params": "/S"}
+            # Ferramentas de suporte e cliente
+            # ===================================================
+            "TEAMVIEWER": {
+                "link": "https://download.teamviewer.com/download/TeamViewer_Setup_x64.exe",  # Link direto de download
+                "arq": "TeamViewer.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/S"  # /S = Instalação silenciosa padrão
+            },
+            "ANYDESK": {
+                "link": "https://download.anydesk.com/AnyDesk.exe",  # Link direto de download
+                "arq": "AnyDesk.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": '--install "C:\\Program Files\\AnyDesk" --start-with-win --silent'
+                # Parâmetros avançados para instalação oculta de serviço
+            },
+            "WINRAR": {
+                "link": "https://www.rarlab.com/rar/winrar-x64-710br.exe",  # Link direto de download
+                "arq": "WinRAR.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/S"  # /S = Silent para RARLAB
+            },
+            "MILVUS AGENTE": {
+                "link": "https://update.milvus.com.br/downloads/110.0.0.4/x64/Setup_Milvus.exe",
+                # Link direto de download
+                "arq": "Setup_Milvus.exe",  # Nome que vai salvar na pasta Downloads_Kit_Techinblue
+                "params": "/S"  # Parâmetros para instalação silenciosa do agente
+            }
         }
+        # ===================================================
+        # FIM DO BANCO DE DADOS
+        # ===================================================
+
+
 
         # ===================================================
         # BLOCO: VARIÁVEIS DAS CHECKBOXES
@@ -158,6 +214,32 @@ class KitTechinblueGUI:
         # --- BLOQUEIO APÓS CARREGAR ---
         # Chama a verificação de senha 100ms após a janela carregar
         self.root.after(100, self.verificar_senha_interface)
+
+    def checar_link(self, url):
+        """Checa se o link retorna 200. Ignora erro de SSL. Adobe sempre retorna True"""
+        # Adobe usa CDN que bloqueia HEAD, então já retorna True pra ela
+        if "adobe.com" in url:
+            self.log("[CHECK] Adobe detectado. Pulando check por usar CDN.")
+            return True
+
+        try:
+            self.log(f"[CHECK] Verificando link...")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+
+            req = urllib.request.Request(url, method='HEAD')
+            req.add_header('User-Agent', 'Mozilla/5.0')
+            with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
+                if response.status == 200:
+                    self.log("[CHECK] Link OK")
+                    return True
+                else:
+                    self.log(f"[CHECK] Link retornou: {response.status}")
+                    return False
+        except Exception as e:
+            self.log(f"[CHECK] Link offline: {str(e)}")
+            return False
 
     def confirmar_saida(self):
         # Cria uma mini janela filha customizada
@@ -208,7 +290,7 @@ class KitTechinblueGUI:
         self.entry_senha.bind('<Return>', lambda event: self.validar_senha())
 
     def validar_senha(self):
-        if self.entry_senha.get() == "SuaSenhaAqui!": # Defina sua senha aqui 👈🫡
+        if self.entry_senha.get() == "S3nh@48517": # Defina sua senha aqui 👈🫡
             self.frame_bloqueio.destroy()
             self.log("[SISTEMA] Acesso liberado pelo técnico da Techinblue.")
         else:
@@ -713,100 +795,202 @@ class KitTechinblueGUI:
     def acao_async(self, funcao, *args):
         threading.Thread(target=funcao, args=args, daemon=True).start()
 
-    # ========== MECANISMO DE INTERRUPÇÃO ATIVA ==========
+
+        # ===================================================
+        # FUNÇÃO: CANCELAR TUDO
+        # DESC: Interrompe imediatamente o loop de instalações e downloads
+        # REGRA: Mata a árvore de processos ativa no Windows para evitar travamentos
+        # ===================================================
     def cancelar_tudo(self):
+        # Abre uma janela de confirmação Sim/Não para o técnico
         if messagebox.askyesno("Cancelar Processos",
                                "Tem certeza de que deseja interromper todas as tarefas, downloads e instalações ativas?"):
+
+            # Ativa a flag global que impede o script de passar para o próximo programa
             self.cancelar_operacao = True
             self.log("[CANCELANDO] Solicitação de interrupção enviada pelo técnico.")
+
+            # Verifica se existe algum download (PowerShell) ou instalador (.exe/.msi) rodando agora
             if self.processo_atual:
                 try:
-                    subprocess.run(f"taskkill /F /T /PID {self.processo_atual.pid}", shell=True, capture_output=True)
+                    # Força o encerramento (/F) de toda a árvore de sub-processos (/T) através do PID atual
+                    subprocess.run(f"taskkill /F /T /PID {self.processo_atual.pid}", shell=True,
+                                   capture_output=True)
                     self.log("[INTERROMPIDO] O subprocesso ativo no Windows foi finalizado.")
                 except Exception as e:
+                    # Registra no log caso o processo já tenha fechado sozinho ou falte permissão de Admin
                     self.log(f"[ERRO] Falha ao encerrar processo: {str(e)}")
+
+                # Reseta o ponteiro do processo para garantir que a fila seja limpa da memória
                 self.processo_atual = None
 
-    # ========== FUNÇÃO UNIVERSAL DE DOWNLOAD E INSTALAÇÃO ==========
+    # ===================================================
+    # FUNÇÃO: UNIVERSAL DE DOWNLOAD E INSTALAÇÃO
+    # DESC: Gerencia o ciclo de vida completo de cada programa (Check, Defender, Download, Desbloqueio e Instalação)
+    # REGRA: Executa downloads em cascata (Planos A, B e C) se houver falhas de rede
+    # ===================================================
     def instalar_programa(self, nome):
+        # Verifica se o técnico clicou em cancelar antes de iniciar este programa específico
         if self.cancelar_operacao:
             self.log(f"[IGNORADO] {nome} pulado devido ao cancelamento do lote.")
             return False
 
+        # Extrai as informações brutas do dicionário (banco_programas) com base no nome recebido
         prog = self.banco_programas[nome]
         link = prog["link"]
         arq_nome = prog["arq"]
         params = prog["params"]
+        # Define o caminho absoluto onde o instalador será salvo no disco do cliente
         caminho_completo = os.path.join(self.pasta_downloads, arq_nome)
 
         self.log(f"=== Processando: {nome} ===")
 
+        # Validação preventiva do Link (Ignora apenas o Adobe devido aos seus redirecionamentos complexos)
+        if nome != "ADOBE":
+            if not self.checar_link(link):
+                self.log(f"[FALHOU] Link do {nome} está offline ou bloqueado. Pulando.")
+                messagebox.showwarning("Link Offline",
+                                       f"O link de download do {nome} falhou.\nVerifique o banco_programas.")
+                return False
+        else:
+            self.log(f"[CHECK] Pulando verificação do Adobe por usar redirect")
+
+        # ---------------------------------------------------
+        # 1. ANTIVÍRUS: Adiciona a pasta nas exceções do Windows Defender
+        # ---------------------------------------------------
+        try:
+            self.log("[DEFENDER] Adicionando pasta nas exceções...")
+            subprocess.run(f'powershell -Command "Add-MpPreference -ExclusionPath \'{self.pasta_downloads}\'"',
+                           shell=True, capture_output=True)
+        except:
+            self.log("[AVISO] Não consegui adicionar exceção no Defender. Rode como Admin.")
+
+        # ---------------------------------------------------
+        # 2. CASO ESPECIAL: OFFICE - Gerar XML de configuração antes de baixar
+        # ---------------------------------------------------
+        if nome == "OFFICE 365/2021":
+            xml_path = os.path.join(self.pasta_downloads, "Office_Config.xml")
+            # Injeta dinamicamente o caminho do XML gerado nos parâmetros que o OfficeSetup vai ler
+            params = f'/configure "{xml_path}"'
+            xml_conteudo = """<Configuration>
+              <Add OfficeClientEdition="64" Channel="Current" SourcePath="">
+                <Product ID="O365ProPlusRetail">
+                  <Language ID="pt-br" />
+                  <ExcludeApp ID="OneDrive" />
+                  <ExcludeApp ID="Teams" />
+                  <ExcludeApp ID="SkypeForBusiness" />
+                  <ExcludeApp ID="Publisher" />
+                  <ExcludeApp ID="Access" />
+                </Product>
+              </Add>
+              <Display Level="None" AcceptEULA="TRUE" />
+              <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+              <Property Name="AUTOACTIVATE" Value="1" />
+              <Updates Enabled="TRUE" Channel="Current" />
+              <RemoveMSI All="True" />
+            </Configuration>"""
+            # Grava o arquivo de configuração XML de forma automatizada na pasta de downloads
+            with open(xml_path, "w", encoding="utf-8") as f:
+                f.write(xml_conteudo)
+            self.log("[INFO] Arquivo Office_Config.xml criado com sucesso.")
+
+        # ---------------------------------------------------
+        # 3. DOWNLOAD: Sistema de download em cascata (Fallback resiliente)
+        # ---------------------------------------------------
         if os.path.exists(caminho_completo):
+            # Otimização: Evita rebaixar arquivos que já estão na pasta Downloads_Kit_Techinblue
             self.log(f"[INFO] {arq_nome} ja existe localmente. Pulando Download.")
         else:
             self.log(f"Iniciando download em cascata de {arq_nome}...")
 
-            if not self.cancelar_operacao:
-                cmd_bits = f"Start-BitsTransfer -Source '{link}' -Destination '{caminho_completo}'"
-                self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_bits], stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
-                self.processo_atual.wait()
+            # PLANO A: Download usando WebClient nativo forçando o User-Agent (Ignora bloqueios de bots)
+            cmd_bits = f'$wc = New-Object System.Net.WebClient; $wc.Headers.Add("User-Agent", "Mozilla/5.0"); $wc.DownloadFile("{link}", "{caminho_completo}")'
+            self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_bits], stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE)
+            self.processo_atual.wait()
 
+            # PLANO B: Se o Plano A falhar, força o aperto de mão usando TLS 1.2 (Evita falhas em Windows desatualizados)
             if not os.path.exists(caminho_completo) and not self.cancelar_operacao:
                 self.log("[AVISO] BITS falhou. Tentando Plano B (WebClient TLS 1.2)...")
-                cmd_webclient = f"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('{link}', '{caminho_completo}')"
+                cmd_webclient = f'[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $wc = New-Object System.Net.WebClient; $wc.Headers.Add("User-Agent", "Mozilla/5.0"); $wc.DownloadFile("{link}", "{caminho_completo}")'
                 self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_webclient],
                                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 self.processo_atual.wait()
 
+            # PLANO C: Se tudo falhar, apela para o Invoke-WebRequest clássico limpando o parsing de HTML
             if not os.path.exists(caminho_completo) and not self.cancelar_operacao:
                 self.log("[AVISO] WebClient falhou. Tentando Plano C (Invoke-WebRequest)...")
-                cmd_webreq = f"Invoke-WebRequest -Uri '{link}' -OutFile '{caminho_completo}' -UserAgent 'Mozilla/5.0' -UseBasicParsing"
-                self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_webreq], stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
+                cmd_webreq = f'Invoke-WebRequest -Uri "{link}" -OutFile "{caminho_completo}" -UserAgent "Mozilla/5.0" -UseBasicParsing'
+                self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_webreq],
+                                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 self.processo_atual.wait()
 
+        # Limpa o ponteiro do processo de download da memória
         self.processo_atual = None
 
+        # Bloqueio de segurança pós-download caso o botão de cancelar tenha sido clicado
         if self.cancelar_operacao:
             self.log(f"[CANCELADO] Operação parada antes da instalação de {nome}.")
             return False
 
+        # Validação física: Se após os 3 planos o arquivo físico não existir, aborta a instalação do app
         if not os.path.exists(caminho_completo):
             self.log(f"[FALHOU] Não foi possível baixar o instalador de {nome}.")
             return False
 
-            # --- LINHA PRA DESTRAVAR WIN 25H2 ---
+        # ---------------------------------------------------
+        # 4. SEGURANÇA DO WINDOWS: Desbloqueio de arquivo e permissões NT
+        # ---------------------------------------------------
         self.log(f"Desbloqueando {arq_nome} para o Windows 25H2...")
+        # Remove a flag da "Zona da Internet" (SmartScreen) para o arquivo rodar liso
         subprocess.run(f'powershell -Command "Unblock-File -Path \'{caminho_completo}\'"', shell=True)
+        # Garante controle total (Full Control) ao grupo Everyone na pasta recursivamente
+        subprocess.run(f'icacls "{caminho_completo}" /grant "Everyone":F /T', shell=True)
 
+        # ---------------------------------------------------
+        # 5. INSTALAÇÃO: Execução e monitoramento silencioso do instalador
+        # ---------------------------------------------------
         self.log(f"Instalando {nome} de forma silenciosa...")
         try:
-            # --- FIX 25H2 PARA MSI ---
+            # Roteamento inteligente de comando baseado na extensão do arquivo
             if arq_nome.endswith(".msi"):
-                self.log(f"Detectado MSI. Usando msiexec para instalação silenciosa...")
+                self.log(f"Detectado MSI. Usando msiexec...")
+                # Executa o MSI via motor interno do Windows (/i) de modo invisível (/qn) e sem reiniciar
                 cmd_exec = f'msiexec.exe /i "{caminho_completo}" {params} /qn /norestart'
-            else:
+                self.processo_atual = subprocess.Popen(cmd_exec, shell=True, stdout=subprocess.PIPE,
+                                                       stderr=subprocess.STDOUT, text=True)
+
+
+
+
+
+            elif nome == "ADOBE":
+                self.log(f"[FIX ADOBE] Usando Start-Process para Adobe")
+                # Adobe precisa de Start-Process pq o cmd /c start dá erro de parâmetro nele
                 cmd_exec = f'Start-Process -FilePath "{caminho_completo}" -ArgumentList "{params}" -Wait -NoNewWindow'
-            # --- FIM FIX ---
+                self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_exec], stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE, text=True)
 
-            self.processo_atual = subprocess.Popen(["powershell", "-Command", cmd_exec], stdout=subprocess.PIPE,
-                                                   stderr=subprocess.PIPE, text=True)
+            else:
+                # Executa arquivos executáveis (.exe) forçando elevação e esperando o término (/wait)
+                cmd_exec = f'cmd /c start "" /wait "{caminho_completo}" {params}'
+                self.processo_atual = subprocess.Popen(cmd_exec, shell=True, stdout=subprocess.PIPE,
+                                                       stderr=subprocess.STDOUT, text=True)
+
+            # Aguarda o instalador do software concluir os processos em segundo plano
             self.processo_atual.wait()
-
             return_code = self.processo_atual.returncode
             self.processo_atual = None
 
-            if return_code == 0:
+            # 0 = Sucesso Completo | 3010 = Instalado perfeitamente (Requer reinicialização do sistema posterior)
+            if return_code == 0 or return_code == 3010:
                 self.log(f"[SUCESSO] {nome} instalado perfeitamente!")
-                return True
-            elif return_code == 3010:  # Codigo de sucesso mas precisa reiniciar
-                self.log(f"[SUCESSO] {nome} instalado! Reinicialização necessária.")
                 return True
             else:
                 self.log(f"[FALHOU] {nome} retornou código de erro: {return_code}")
                 return False
         except Exception as e:
+            # Captura falhas críticas do sistema operacional (falta de privilégios ou executável corrompido)
             self.processo_atual = None
             self.log(f"[ERRO] Falha crítica na execução do instalador: {str(e)}")
             return False
